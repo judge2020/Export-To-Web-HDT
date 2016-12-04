@@ -162,6 +162,6 @@ namespace Export_To_Web
 		{
 		}
 
-		public Version Version => new Version(1,0,0);
+		public Version Version => new Version(1,0,1);
 	}
 }
