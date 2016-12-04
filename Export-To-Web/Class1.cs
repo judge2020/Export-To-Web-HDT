@@ -5,8 +5,8 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Forms;
 using Hearthstone_Deck_Tracker;
+using Hearthstone_Deck_Tracker.Hearthstone;
 using Hearthstone_Deck_Tracker.Plugins;
 using MahApps.Metro.Controls.Dialogs;
 using Clipboard = System.Windows.Clipboard;
@@ -19,9 +19,12 @@ namespace Export_To_Web
 	    private static readonly string BaseDir = AppDomain.CurrentDomain.BaseDirectory;
 		private static readonly string HearthpwnFile = BaseDir+"\\hearthpwn.txt";
 	    private static readonly Dictionary<string, string> CardDictionary = new Dictionary<string, string>();
-
+	    private static Deck _selectedDeck;
+	    
 	    public static void OnLoad()
 		{
+			Hearthstone_Deck_Tracker.API.DeckManagerEvents.OnDeckSelected.Add(DeckSelected);
+
 			if(!File.Exists(HearthpwnFile))
 			{
 				//make sure file is present
@@ -40,26 +43,34 @@ namespace Export_To_Web
 
 		}
 
+	    private static void DeckSelected(Deck deck)
+	    {
+		    _selectedDeck = deck;
+	    }
+
 	    private static async void ExportHearthpwn()
 		{
 			try
 			{
-				var deck = DeckList.Instance.ActiveDeck;
-				var deckUrl = "http://www.hearthpwn.com/deckbuilder/"+deck.Class.ToLower()+"#";
-				foreach(var card in deck.Cards)
+				var deckUrl = "http://www.hearthpwn.com/deckbuilder/" + _selectedDeck.Class.ToLower() + "#";
+				foreach (var card in _selectedDeck.Cards)
 				{
 					var cardId = CardDictionary[card.Name];
-					deckUrl=deckUrl+cardId+":"+card.Count+";";
+					deckUrl = deckUrl + cardId + ":" + card.Count + ";";
 				}
 				var dialogResult = await OpenCopy();
-				if(dialogResult==MessageDialogResult.Affirmative)
+				if (dialogResult == MessageDialogResult.Affirmative)
 				{
 					Helper.TryOpenUrl(deckUrl);
 				}
-				if(dialogResult==MessageDialogResult.Negative)
+				if (dialogResult == MessageDialogResult.Negative)
 				{
 					Clipboard.SetText(deckUrl);
 				}
+			}
+			catch (NullReferenceException)
+			{
+				await Reselect();
 			}
 			catch(Exception e)
 			{
@@ -91,6 +102,10 @@ namespace Export_To_Web
 			};
 			return await Core.MainWindow.ShowMessageAsync("Unable to create URL","Would you like to send the crash report?",MessageDialogStyle.AffirmativeAndNegative,messaSettings);
 		}
+		private static async Task<MessageDialogResult> Reselect()
+		{
+			return await Core.MainWindow.ShowMessageAsync("Please select a different deck then reselect the current one.", "This is due to HDT not really selecting a deck on startup.");
+		}
 
 		private static void DownloadHearthpwn()
 		{
@@ -110,9 +125,9 @@ namespace Export_To_Web
 	{
 		public string Author => "Author name";
 
-		public string ButtonText => "Settings";
+		public string ButtonText => "View github/readme";
 
-		public string Description => "example text";
+		public string Description => "Exports selected deck to Hearthpwn. More deck websites to be added in the future. ";
 
 		public MenuItem MenuItem
 		{
@@ -120,7 +135,7 @@ namespace Export_To_Web
 			{
 				var menuItem = new MenuItem()
 				{
-					Header = "Export \"active\" deck to Hearthpwn".ToUpper()
+					Header = "Export deck to Hearthpwn".ToUpper()
 				};
 				
 				
@@ -133,6 +148,7 @@ namespace Export_To_Web
 
 		public void OnButtonPress()
 		{
+		Helper.TryOpenUrl("https://github.com/judge2020/Export-To-Web-HDT");
 		}
 
 		public void OnLoad() => Class1.OnLoad();
