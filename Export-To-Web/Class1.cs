@@ -42,32 +42,55 @@ namespace Export_To_Web
 
 	    private static async void ExportHearthpwn()
 		{
-			var deck = DeckList.Instance.ActiveDeck;
-			var deckUrl = "http://www.hearthpwn.com/deckbuilder/"+deck.Class.ToLower()+"#";
-			foreach(var card in deck.Cards)
+			try
 			{
-				var cardId = CardDictionary[card.Name];
-				deckUrl = deckUrl + cardId + ":" + card.Count + ";";
+				var deck = DeckList.Instance.ActiveDeck;
+				var deckUrl = "http://www.hearthpwn.com/deckbuilder/"+deck.Class.ToLower()+"#";
+				foreach(var card in deck.Cards)
+				{
+					var cardId = CardDictionary[card.Name];
+					deckUrl=deckUrl+cardId+":"+card.Count+";";
+				}
+				var dialogResult = await OpenCopy();
+				if(dialogResult==MessageDialogResult.Affirmative)
+				{
+					Helper.TryOpenUrl(deckUrl);
+				}
+				if(dialogResult==MessageDialogResult.Negative)
+				{
+					Clipboard.SetText(deckUrl);
+				}
 			}
-			var dialogResult = await OpenCopy();
-			if (dialogResult == MessageDialogResult.Affirmative)
+			catch(Exception e)
 			{
-				Helper.TryOpenUrl(deckUrl);
-			}
-			if (dialogResult == MessageDialogResult.Negative)
-			{
-				Clipboard.SetText(deckUrl);
+				var dialogResult = await Error();
+				if (dialogResult == MessageDialogResult.Affirmative)
+				{
+					var url = "https://github.com/judge2020/Export-To-Web-HDT/issues/new?title=Crash Report&body=" + e.Message + " | Stacktrace: " + e.StackTrace;
+					Helper.TryOpenUrl(url);
+				}
 			}
 
 		}
 
 	    private static async Task<MessageDialogResult> OpenCopy()
 	    {
-		    MetroDialogSettings messaSettings = new MetroDialogSettings();
-		    messaSettings.AffirmativeButtonText = "Open URL";
-		    messaSettings.NegativeButtonText = "Copy to clipboard";
-			return await Core.MainWindow.ShowMessageAsync("Hearthpwn URL created", "Would you like to Open the URL or copy it to clipboard?", MessageDialogStyle.AffirmativeAndNegative, messaSettings);
+		    MetroDialogSettings messaSettings = new MetroDialogSettings
+		    {
+			    AffirmativeButtonText = "Open URL",
+			    NegativeButtonText = "Copy to clipboard"
+		    };
+		    return await Core.MainWindow.ShowMessageAsync("Hearthpwn URL created", "Would you like to Open the URL or copy it to clipboard?", MessageDialogStyle.AffirmativeAndNegative, messaSettings);
 	    }
+		private static async Task<MessageDialogResult> Error()
+		{
+			MetroDialogSettings messaSettings = new MetroDialogSettings
+			{
+				AffirmativeButtonText = "Send report",
+				NegativeButtonText = "don't send"
+			};
+			return await Core.MainWindow.ShowMessageAsync("Unable to create URL","Would you like to send the crash report?",MessageDialogStyle.AffirmativeAndNegative,messaSettings);
+		}
 
 		private static void DownloadHearthpwn()
 		{
@@ -97,7 +120,7 @@ namespace Export_To_Web
 			{
 				var menuItem = new MenuItem()
 				{
-					Header = "Export to Hearthpwn".ToUpper()
+					Header = "Export \"active\" deck to Hearthpwn".ToUpper()
 				};
 				
 				
