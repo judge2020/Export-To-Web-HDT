@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 using Hearthstone_Deck_Tracker;
 using Hearthstone_Deck_Tracker.Hearthstone;
 using Hearthstone_Deck_Tracker.Plugins;
 using MahApps.Metro.Controls.Dialogs;
+using Microsoft.Win32;
 using Clipboard = System.Windows.Clipboard;
 using MenuItem = System.Windows.Controls.MenuItem;
 
@@ -16,7 +18,8 @@ namespace Export_To_Web
 {
     public class Class1
     {
-	    private static readonly string BaseDir = AppDomain.CurrentDomain.BaseDirectory;
+		public static Version CurrentVersion => new Version(1,0,1);
+		private static readonly string BaseDir = AppDomain.CurrentDomain.BaseDirectory;
 		private static readonly string HearthpwnFile = BaseDir+"\\hearthpwn.txt";
 	    private static readonly Dictionary<string, string> CardDictionary = new Dictionary<string, string>();
 	    private static Deck _selectedDeck;
@@ -84,7 +87,55 @@ namespace Export_To_Web
 
 		}
 
-	    private static async Task<MessageDialogResult> OpenCopy()
+
+		private static async void ExportGeneric()
+		{
+			try
+			{
+				if (_selectedDeck.Cards == null)
+				{
+					throw new NullReferenceException();
+				}
+				SaveFileDialog mainDialog = new SaveFileDialog();
+				mainDialog.Filter = "Text Files (*.txt)|*.txt|All Files (*.*)|*.*";
+				mainDialog.Title = "save deck";
+				mainDialog.ShowDialog();
+				if (!string.IsNullOrEmpty(mainDialog.FileName))
+				{
+					StreamWriter sw = new StreamWriter(mainDialog.FileName);
+					foreach (var card in _selectedDeck.Cards)
+					{
+						if (card.Count == 2)
+						{
+							sw.WriteLine(card.Name + " x 2");
+						}
+						else
+						{
+							sw.WriteLine(card.Name);
+						}
+					}
+					sw.Close();
+					ExploreFile(mainDialog.FileName);
+				}
+			}
+			catch (NullReferenceException)
+			{
+				await Reselect();
+			}
+			catch(Exception e)
+			{
+
+				var dialogResult = await Error();
+				if(dialogResult==MessageDialogResult.Affirmative)
+				{
+					var url = "https://github.com/judge2020/Export-To-Web-HDT/issues/new?title=Crash Report&body="+e.Message+" | Stacktrace: "+e.StackTrace;
+					Helper.TryOpenUrl(url);
+				}
+			}
+		}
+
+
+		private static async Task<MessageDialogResult> OpenCopy()
 	    {
 		    MetroDialogSettings messaSettings = new MetroDialogSettings
 		    {
@@ -100,7 +151,16 @@ namespace Export_To_Web
 				AffirmativeButtonText = "Send report",
 				NegativeButtonText = "don't send"
 			};
-			return await Core.MainWindow.ShowMessageAsync("Unable to create URL","Would you like to send the crash report?",MessageDialogStyle.AffirmativeAndNegative,messaSettings);
+			return await Core.MainWindow.ShowMessageAsync("Unable to export deck","Would you like to send the crash report?",MessageDialogStyle.AffirmativeAndNegative,messaSettings);
+		}
+		private static async Task<MessageDialogResult> UpdateAvailable()
+		{
+			MetroDialogSettings messaSettings = new MetroDialogSettings
+			{
+				AffirmativeButtonText="Yes",
+				NegativeButtonText="No"
+			};
+			return await Core.MainWindow.ShowMessageAsync("There is an update for export to web!","Would you like to update now?",MessageDialogStyle.AffirmativeAndNegative,messaSettings);
 		}
 		private static async Task<MessageDialogResult> Reselect()
 		{
@@ -110,16 +170,21 @@ namespace Export_To_Web
 		private static void DownloadHearthpwn()
 		{
 			var wc = new WebClient();
-			wc.DownloadFile("https://judge2020.com/hearthpwn.txt",HearthpwnFile);
+			wc.DownloadFile(@"https://judge2020.com/hdt/export/hearthpwn.txt",HearthpwnFile);
 		}
 
-	    public static void menuItem_click(object sender, RoutedEventArgs e) => ExportHearthpwn();
+	    public static void hearthpwnItem_click(object sender, RoutedEventArgs e) => ExportHearthpwn();
+	    public static void genericItem_click(object sender, RoutedEventArgs e) => ExportGeneric();
 
 	    public static void OnUnload()
 	    {
 		    CardDictionary.Clear();
 	    }
-    }
+		public static void ExploreFile(string filePath)
+		{
+			System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{filePath}\"");
+		}
+	}
 
 	public class ExportWebPlugin : IPlugin
 	{
@@ -133,13 +198,13 @@ namespace Export_To_Web
 		{
 			get
 			{
-				var menuItem = new MenuItem()
-				{
-					Header = "Export deck to Hearthpwn".ToUpper()
-				};
-				
-				
-				menuItem.Click += Class1.menuItem_click;
+				var menuItem = new MenuItem() { Header = "EXPORT" };
+				var hearthpwnItem = new MenuItem() { Header = "HEARTHPWN" };
+				var genericItem = new MenuItem() {Header = "GENERIC TXT"};
+				hearthpwnItem.Click += Class1.hearthpwnItem_click;
+				genericItem.Click += Class1.genericItem_click;
+				menuItem.Items.Add(hearthpwnItem);
+				menuItem.Items.Add(genericItem);
 				return menuItem;
 			}
 		}
@@ -162,6 +227,6 @@ namespace Export_To_Web
 		{
 		}
 
-		public Version Version => new Version(1,0,1);
+		public Version Version => Class1.CurrentVersion;
 	}
 }
