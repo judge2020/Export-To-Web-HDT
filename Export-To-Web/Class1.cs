@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 using Hearthstone_Deck_Tracker;
@@ -96,9 +95,11 @@ namespace Export_To_Web
 				{
 					throw new NullReferenceException();
 				}
-				SaveFileDialog mainDialog = new SaveFileDialog();
-				mainDialog.Filter = "Text Files (*.txt)|*.txt|All Files (*.*)|*.*";
-				mainDialog.Title = "save deck";
+				SaveFileDialog mainDialog = new SaveFileDialog
+				{
+					Filter = "Text Files (*.txt)|*.txt|All Files (*.*)|*.*",
+					Title = "save deck"
+				};
 				mainDialog.ShowDialog();
 				if (!string.IsNullOrEmpty(mainDialog.FileName))
 				{
@@ -176,19 +177,14 @@ namespace Export_To_Web
 	    public static void hearthpwnItem_click(object sender, RoutedEventArgs e) => ExportHearthpwn();
 	    public static void genericItem_click(object sender, RoutedEventArgs e) => ExportGeneric();
 
-	    public static void OnUnload()
-	    {
-		    CardDictionary.Clear();
-	    }
-		public static void ExploreFile(string filePath)
-		{
-			System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{filePath}\"");
-		}
+	    public static void OnUnload() => CardDictionary.Clear();
+
+	    private static void ExploreFile(string filePath) =>System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{filePath}\"");
 	}
 
 	public class ExportWebPlugin : IPlugin
 	{
-		public string Author => "Author name";
+		public string Author => "Judge2020";
 
 		public string ButtonText => "View github/readme";
 
@@ -205,7 +201,7 @@ namespace Export_To_Web
 				genericItem.Click += Class1.genericItem_click;
 				menuItem.Items.Add(hearthpwnItem);
 				menuItem.Items.Add(genericItem);
-				return menuItem;
+				return menuItem; 
 			}
 		}
 
