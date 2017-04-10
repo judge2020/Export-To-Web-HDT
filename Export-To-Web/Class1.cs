@@ -17,7 +17,7 @@ namespace Export_To_Web
 {
     public class Class1
     {
-		public static Version CurrentVersion => new Version(1,0,1);
+		public static Version CurrentVersion => new Version(1,1,0);
 		private static readonly string BaseDir = AppDomain.CurrentDomain.BaseDirectory;
 		private static readonly string HearthpwnFile = BaseDir+"\\hearthpwn.txt";
 	    private static readonly Dictionary<string, string> CardDictionary = new Dictionary<string, string>();
@@ -27,11 +27,8 @@ namespace Export_To_Web
 		{
 			Hearthstone_Deck_Tracker.API.DeckManagerEvents.OnDeckSelected.Add(DeckSelected);
 
-			if(!File.Exists(HearthpwnFile))
-			{
-				//make sure file is present
-				DownloadHearthpwn();
-			}
+			UpdateManager.Updater();
+
 			//read file
 			var fileRead = File.ReadAllLines(HearthpwnFile);
 
@@ -166,12 +163,6 @@ namespace Export_To_Web
 		private static async Task<MessageDialogResult> Reselect()
 		{
 			return await Core.MainWindow.ShowMessageAsync("Please select a different deck then reselect the current one.", "This is due to HDT not really selecting a deck on startup.");
-		}
-
-		private static void DownloadHearthpwn()
-		{
-			var wc = new WebClient();
-			wc.DownloadFile(@"https://judge2020.com/hdt/export/hearthpwn.txt",HearthpwnFile);
 		}
 
 	    public static void hearthpwnItem_click(object sender, RoutedEventArgs e) => ExportHearthpwn();
