@@ -1,4 +1,8 @@
 # Export-To-Web-HDT
+
+[![Build status](https://ci.appveyor.com/api/projects/status/73ldwu4nyiytwucd/branch/master?svg=true)](https://ci.appveyor.com/project/judge2020/export-to-web-hdt-jt3fk/branch/master)
+
+
 Export decks to websites through HDT
 
 At startup the plugin will try to download the data file, hearthpwn.txt which is generated using [this tool](https://github.com/judge2020/HearthPwn-cardId-gen).
